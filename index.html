@@ -60,7 +60,8 @@
     transition: transform .1s;
   }
   .char:hover { transform: scale(1.08); }
-  .char .emoji { font-size: 54px; line-height: 1; filter: drop-shadow(0 4px 2px rgba(0,0,0,.4)); }
+  .char .art svg { display: block; width: 80px; height: 96px; margin: 0 auto; filter: drop-shadow(0 3px 2px rgba(0,0,0,.35)); }
+  .ico svg { width: 30px; height: 36px; vertical-align: middle; }
   .char .label {
     display: inline-block; margin-top: 2px; padding: 2px 6px; border-radius: 6px;
     background: rgba(0,0,0,.65); font-size: 12px; font-weight: bold; white-space: nowrap;
@@ -125,7 +126,7 @@
     .legend { grid-template-columns: 1fr; }
     .card h1 { font-size: 30px; }
     .char { width: 80px; }
-    .char .emoji { font-size: 44px; }
+    .char .art svg { width: 66px; height: 80px; }
   }
 </style>
 </head>
@@ -151,16 +152,16 @@
         <div class="g">
           <h3>✅ À interpeller</h3>
           <ul>
-            <li>✊ Manifestant : <b>+10</b></li>
-            <li>🎒 Lycéen : <b>+15</b></li>
+            <li><span class="ico" data-t="manif"></span> Manifestant : <b>+10</b></li>
+            <li><span class="ico" data-t="lyceen"></span> Lycéen : <b>+15</b></li>
           </ul>
         </div>
         <div class="b">
           <h3>❌ Surtout pas !</h3>
           <ul>
-            <li>🎤 Journaliste CNews : <b>−20</b></li>
-            <li>🕶️ Policier en civil : <b>−25</b></li>
-            <li>👵 Vieille dame : <b>−30</b></li>
+            <li><span class="ico" data-t="cnews"></span> Journaliste CNews : <b>−20</b></li>
+            <li><span class="ico" data-t="civil"></span> Policier en civil : <b>−25</b></li>
+            <li><span class="ico" data-t="mamie"></span> Vieille dame : <b>−30</b></li>
           </ul>
         </div>
       </div>
@@ -179,18 +180,19 @@
     </div>
   </div>
 
+<script src="art.js"></script>
 <script>
 (() => {
   const TYPES = [
-    { id: "manif",   emoji: "✊", label: "Manifestant",       pts: 10,  weight: 34, life: 1700,
+    { id: "manif",   label: "Manifestant",       pts: 10,  weight: 34, life: 1700,
       signs: ["NON À LA RÉFORME", "64 ANS C'EST NON", "ON LÂCHE RIEN", "RETRAITE À 20 ANS", "MACRON DÉMISSION"] },
-    { id: "lyceen",  emoji: "🎒", label: "Lycéen",            pts: 15,  weight: 24, life: 1300,
+    { id: "lyceen",  label: "Lycéen",            pts: 15,  weight: 24, life: 1300,
       signs: ["BLOCUS !!!", "PAS DE BAC = PAS DE PB", "J'AI PAS RÉVISÉ", "LA CANTINE EST NULLE"] },
-    { id: "cnews",   emoji: "🎤", label: "Journaliste CNews", pts: -20, weight: 16, life: 2000,
+    { id: "cnews",   label: "Journaliste CNews", pts: -20, weight: 16, life: 2000,
       signs: ["EN DIRECT", "INSÉCURITÉ ?", "ENSAUVAGEMENT"] },
-    { id: "civil",   emoji: "🕶️", label: "Policier en civil", pts: -25, weight: 14, life: 1900,
+    { id: "civil",   label: "Policier en civil", pts: -25, weight: 14, life: 1900,
       signs: ["CASSEUR (pour de faux)", "JE SUIS DES VÔTRES", "BRASSARD DANS LA POCHE"] },
-    { id: "mamie",   emoji: "👵", label: "Vieille dame",      pts: -30, weight: 12, life: 2300,
+    { id: "mamie",   label: "Vieille dame",      pts: -30, weight: 12, life: 2300,
       signs: ["JE CHERCHE LA PHARMACIE", "OÙ EST MON CHAT ?", "JE VAIS AU MARCHÉ"] },
   ];
   const TOTAL_WEIGHT = TYPES.reduce((s, t) => s + t.weight, 0);
@@ -260,11 +262,11 @@
     const el = document.createElement("div");
     el.className = "char";
     const sign = t.signs[Math.floor(Math.random() * t.signs.length)];
-    el.innerHTML = `<div class="sign">${sign}</div><div class="emoji">${t.emoji}</div>
+    el.innerHTML = `<div class="sign">${sign}</div><div class="art">${CRSArt[t.id]()}</div>
       <div class="label">${t.label}</div><div class="timer"><i></i></div>`;
 
     const w = arena.clientWidth, h = arena.clientHeight;
-    const cw = w < 520 ? 80 : 96, ch = 110;
+    const cw = w < 520 ? 80 : 96, ch = w < 520 ? 120 : 136;
     el.style.left = Math.max(4, Math.random() * (w - cw - 8)) + "px";
     el.style.top = Math.max(22, Math.random() * (h - ch - 8)) + "px";
 
@@ -381,6 +383,7 @@
 
   document.getElementById("startBtn").addEventListener("click", start);
   document.getElementById("againBtn").addEventListener("click", start);
+  document.querySelectorAll(".ico").forEach(e => { e.innerHTML = CRSArt[e.dataset.t](); });
   addSmoke();
 })();
 </script>
