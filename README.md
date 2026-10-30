@@ -2,11 +2,22 @@
 
 Petit jeu parodique jouable dans le navigateur : vous incarnez un CRS en pleine manif.
 
-- ✊ Manifestant : **+10** · 🎒 Lycéen : **+15**
-- 🎤 Journaliste CNews : **−20** · 🕶️ Policier en civil : **−25** · 👵 Vieille dame : **−30**
+## Missions
 
-60 secondes, ça accélère au fil du temps (la musique aussi), record sauvegardé dans le navigateur.
-Musique et bruitages générés en direct (Web Audio API), bouton 🔊 pour couper le son.
+1. **Manif du 1er mai** : manifestants, lycéens et black blocs à interpeller ; journalistes CNews, policiers en civil, mamies, députés et livreurs à éviter.
+2. **Blocus du lycée** : lycéens et profs en grève contre le proviseur.
+3. **Finale de Coupe du monde** : supporters et ultras à fumigènes au milieu des touristes.
+
+## Règles
+
+- 60 secondes, ça accélère au fil du temps (la musique aussi).
+- **Combo** : tous les 5 interpellations sans bavure ni fuyard, le multiplicateur monte (jusqu'à x4).
+- **Jauge IGPN** : chaque bavure la remplit ; si elle déborde, vous êtes muté en province.
+- **Renforts** : cliquez sur le fourgon pour gagner 5 secondes.
+- Des vagues surprises (« ÇA CHARGE ! », « BLOCUS ! ») font apparaître des groupes entiers.
+- Un record par mission, sauvegardé dans le navigateur.
+
+Personnages dessinés en SVG et générés aléatoirement, musique et bruitages générés en direct (Web Audio API), bouton 🔊 pour couper le son.
 
 ## Jouer
 

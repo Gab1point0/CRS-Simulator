@@ -129,6 +129,60 @@ window.CRSAudio = (() => {
       if (!ctx) return;
       noise({ dur: .13, vol: .12, freq: 600, to: 3000, q: 2 });
     },
+    // Combo qui monte : arpège ascendant
+    comboUp(level) {
+      if (!ctx) return;
+      const t = now();
+      [0, 4, 7, 12].forEach((n, i) => tone({ freq: midi(72 + level * 2 + n), type: "square", t: t + i * .05, dur: .1, vol: .06, filter: 4000 }));
+    },
+    // Combo perdu
+    comboLost() {
+      if (!ctx) return;
+      tone({ freq: 500, to: 150, type: "square", dur: .25, vol: .05, filter: 2000 });
+    },
+    // Jauge IGPN dans le rouge
+    alarm() {
+      if (!ctx) return;
+      const t = now();
+      for (let i = 0; i < 4; i++) tone({ freq: i % 2 ? 660 : 880, type: "square", t: t + i * .12, dur: .1, vol: .06, filter: 3000 });
+    },
+    // Renforts : mini-sirène + jingle
+    bonus() {
+      if (!ctx) return;
+      const t = now();
+      tone({ freq: 435, type: "square", t, dur: .2, vol: .06, filter: 1800 });
+      tone({ freq: 488, type: "square", t: t + .2, dur: .2, vol: .06, filter: 1800 });
+      [67, 72, 76, 79].forEach((n, i) => tone({ freq: midi(n), type: "triangle", t: t + .4 + i * .07, dur: .15, vol: .1 }));
+    },
+    // Grosse charge : la foule gronde
+    charge() {
+      if (!ctx) return;
+      const t = now(), s = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
+      s.buffer = noiseBuf; f.type = "bandpass"; f.frequency.value = 500; f.Q.value = .5;
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(.35, t + .4);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 1.6);
+      s.connect(f); f.connect(g); g.connect(sfxBus);
+      s.start(t); s.stop(t + 1.7);
+      whistle(t + .1, .3, .05); whistle(t + .5, .5, .05, 2500);
+    },
+    // Sonnette de vélo "dring dring"
+    bell() {
+      if (!ctx) return;
+      const t = now();
+      [0, .14].forEach(d => { tone({ freq: 2100, type: "sine", t: t + d, dur: .25, vol: .08 }); tone({ freq: 2650, type: "sine", t: t + d, dur: .2, vol: .05 }); });
+    },
+    // Sonnerie du lycée
+    schoolBell() {
+      if (!ctx) return;
+      const t = now(), o = ctx.createOscillator(), g = ctx.createGain(), lfo = ctx.createOscillator(), lg = ctx.createGain();
+      o.type = "square"; o.frequency.value = 1150;
+      lfo.type = "square"; lfo.frequency.value = 22; lg.gain.value = .03;
+      g.gain.value = .03; lfo.connect(lg); lg.connect(g.gain);
+      const f = ctx.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = 3000;
+      o.connect(g); g.connect(f); f.connect(sfxBus);
+      o.start(t); lfo.start(t); o.stop(t + .5); lfo.stop(t + .5);
+    },
     // Apparition discrète
     pop() {
       if (!ctx) return;
@@ -158,21 +212,39 @@ window.CRSAudio = (() => {
   };
 
   // ---- Musique de fond (séquenceur) ----
-  // Grille Lam – Fa – Do – Sol, ambiance marche/punk qui s'accélère
-  const CHORDS = [
-    { root: 45, third: 3 }, { root: 41, third: 4 }, { root: 48, third: 4 }, { root: 43, third: 4 },
+  // Une grille par niveau. Mélodie : index dans [fondamentale, tierce, quinte, octave], -1 = silence
+  const THEMES = [
+    { // Manif du 1er mai : marche en Lam – Fa – Do – Sol
+      bpm: 132,
+      chords: [{ root: 45, third: 3 }, { root: 41, third: 4 }, { root: 48, third: 4 }, { root: 43, third: 4 }],
+      leads: [
+        [3, -1, 2, -1, 1, -1, 2, 3, -1, 2, -1, 1, 0, -1, 1, -1],
+        [0, -1, 1, 2, -1, 2, 3, -1, 2, -1, 1, -1, 2, -1, -1, -1],
+      ],
+    },
+    { // Blocus du lycée : punk rapide en Mim – Do – Sol – Ré
+      bpm: 152,
+      chords: [{ root: 40, third: 3 }, { root: 48, third: 4 }, { root: 43, third: 4 }, { root: 50, third: 4 }],
+      leads: [
+        [0, 0, -1, 2, -1, 2, 3, -1, 2, 2, -1, 1, -1, 1, 0, -1],
+        [3, -1, 3, 2, -1, 1, 2, -1, 0, -1, 0, 1, -1, 2, -1, -1],
+      ],
+    },
+    { // Finale de Coupe du monde : chant de stade en Do – Sol – Lam – Fa
+      bpm: 124,
+      chords: [{ root: 48, third: 4 }, { root: 43, third: 4 }, { root: 45, third: 3 }, { root: 41, third: 4 }],
+      leads: [
+        [0, -1, 0, -1, 0, -1, 1, -1, 2, -1, -1, -1, 1, -1, -1, -1],
+        [3, -1, 2, -1, 1, -1, 2, -1, 0, -1, -1, -1, -1, -1, -1, -1],
+      ],
+    },
   ];
-  // Mélodie (index dans [fondamentale, tierce, quinte, octave, -1 = silence]) sur 16 doubles-croches
-  const LEADS = [
-    [3, -1, 2, -1, 1, -1, 2, 3, -1, 2, -1, 1, 0, -1, 1, -1],
-    [0, -1, 1, 2, -1, 2, 3, -1, 2, -1, 1, -1, 2, -1, -1, -1],
-  ];
-  let bpm = 132, step = 0, nextTime = 0, seqTimer = null;
+  let theme = THEMES[0], bpm = 132, step = 0, nextTime = 0, seqTimer = null;
 
   function scheduleStep(s, t) {
     const sixteenth = 60 / bpm / 4;
     const bar = Math.floor(s / 16) % 4, pos = s % 16;
-    const ch = CHORDS[bar];
+    const ch = theme.chords[bar];
     const tones = [0, ch.third, 7, 12];
 
     // Batterie
@@ -187,7 +259,7 @@ window.CRSAudio = (() => {
     }
 
     // Mélodie
-    const idx = LEADS[Math.floor(s / 32) % 2][pos];
+    const idx = theme.leads[Math.floor(s / 32) % 2][pos];
     if (idx >= 0) {
       tone({ freq: midi(ch.root + 24 + tones[idx]), type: "square", t, dur: sixteenth * 1.6, vol: .07, filter: 2600, bus: musicBus });
     }
@@ -223,9 +295,10 @@ window.CRSAudio = (() => {
     ambience = { src, lfo, timer };
   }
 
-  function startMusic() {
+  function startMusic(themeIdx = 0) {
     if (!ctx || seqTimer) return;
-    bpm = 132; step = 0; nextTime = ctx.currentTime + 1.8; // laisse passer la sirène
+    theme = THEMES[themeIdx] || THEMES[0];
+    bpm = theme.bpm; step = 0; nextTime = ctx.currentTime + 1.8; // laisse passer la sirène
     seqTimer = setInterval(scheduler, 25);
     startAmbience();
   }
@@ -240,7 +313,7 @@ window.CRSAudio = (() => {
   }
 
   // 0 -> 1 : la musique accélère au fil de la partie
-  function setIntensity(x) { bpm = 132 + 38 * x; }
+  function setIntensity(x) { bpm = theme.bpm + 38 * x; }
 
   function toggleMute() {
     muted = !muted;

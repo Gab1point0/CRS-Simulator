@@ -7,7 +7,6 @@
 <style>
   :root {
     --bg: #2b2f3a;
-    --street: #555b66;
     --panel: #12141a;
     --yellow: #ffd23f;
     --red: #ff4d4d;
@@ -32,22 +31,58 @@
     z-index: 10; font-weight: bold; font-size: 18px;
   }
   #hud .title { color: var(--yellow); letter-spacing: 1px; }
-  #hud .stats { display: flex; gap: 18px; }
+  #hud .stats { display: flex; gap: 18px; align-items: center; }
   #hud .stats span b { color: var(--yellow); }
+  #subhud {
+    position: fixed; top: 56px; left: 0; right: 0; height: 32px; z-index: 10;
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    padding: 0 16px; background: rgba(18,20,26,.85); font-weight: bold; font-size: 15px;
+  }
+  #combo { white-space: nowrap; }
+  #combo b { color: var(--yellow); }
+  #combo.hot b { color: #ff9800; text-shadow: 0 0 6px #ff9800; }
+  .igpn { display: flex; align-items: center; gap: 8px; flex: 0 1 320px; }
+  .igpn .bar {
+    flex: 1; height: 14px; border-radius: 7px; background: rgba(255,255,255,.12);
+    border: 1px solid rgba(255,255,255,.25); overflow: hidden;
+  }
+  .igpn .bar i {
+    display: block; height: 100%; width: 0%;
+    background: linear-gradient(90deg, #ffd23f, #ff9800 50%, #ff1744);
+    transition: width .25s;
+  }
+  .igpn.danger { animation: blink .5s infinite; }
+  @keyframes blink { 50% { opacity: .35; } }
   #arena {
-    position: fixed; top: 56px; left: 0; right: 0; bottom: 0;
+    position: fixed; top: 88px; left: 0; right: 0; bottom: 0;
+    cursor: crosshair;
+    overflow: hidden;
+  }
+  #arena.lvl-mai {
     background:
       repeating-linear-gradient(90deg, transparent 0 118px, rgba(255,255,255,.06) 118px 120px),
       repeating-linear-gradient(0deg, transparent 0 58px, rgba(255,255,255,.05) 58px 60px),
-      radial-gradient(ellipse at center, #646a76 0%, var(--street) 60%, #3d424b 100%);
-    cursor: crosshair;
-    overflow: hidden;
+      radial-gradient(ellipse at center, #646a76 0%, #555b66 60%, #3d424b 100%);
+  }
+  #arena.lvl-blocus {
+    background:
+      repeating-linear-gradient(0deg, transparent 0 80px, rgba(255,255,255,.07) 80px 83px),
+      linear-gradient(180deg, #2e5d3a 0 36px, #a5662f 36px 46px, #b8a587 46px, #9e8c70 100%);
+  }
+  #arena.lvl-cdm {
+    background:
+      radial-gradient(circle at 15% 20%, rgba(0,85,164,.45), transparent 35%),
+      radial-gradient(circle at 85% 25%, rgba(239,65,53,.45), transparent 35%),
+      radial-gradient(circle at 50% 0%, rgba(255,255,255,.2), transparent 40%),
+      repeating-linear-gradient(90deg, transparent 0 140px, rgba(255,255,255,.04) 140px 142px),
+      linear-gradient(180deg, #0d1330, #1e2440 60%, #2a2f45);
   }
   .smoke {
     position: absolute; border-radius: 50%; pointer-events: none;
     background: radial-gradient(circle, rgba(230,230,230,.35), rgba(230,230,230,0) 70%);
     animation: drift 9s linear infinite;
   }
+  .lvl-cdm .smoke { background: radial-gradient(circle, rgba(255,90,90,.3), rgba(255,90,90,0) 70%); }
   @keyframes drift {
     from { transform: translateX(-30px) scale(1); }
     50% { transform: translateX(30px) scale(1.15); }
@@ -57,10 +92,14 @@
     position: absolute; width: 96px; text-align: center;
     animation: pop .2s ease-out;
     cursor: pointer;
-    transition: transform .1s;
   }
-  .char:hover { transform: scale(1.08); }
-  .char .art svg { display: block; width: 80px; height: 96px; margin: 0 auto; filter: drop-shadow(0 3px 2px rgba(0,0,0,.35)); }
+  .char .art svg { display: block; width: 80px; height: 96px; margin: 0 auto; filter: drop-shadow(0 3px 2px rgba(0,0,0,.35)); transition: transform .1s; }
+  .char:hover .art svg { transform: scale(1.08); }
+  .char.flip .art svg { transform: scaleX(-1); }
+  .char.flip:hover .art svg { transform: scaleX(-1.08) scaleY(1.08); }
+  .char.van { width: 120px; }
+  .char.van .art svg { width: 110px; height: 132px; margin-bottom: -26px; }
+  .char.van .label { background: #1a3d8f; }
   .ico svg { width: 30px; height: 36px; vertical-align: middle; }
   .char .label {
     display: inline-block; margin-top: 2px; padding: 2px 6px; border-radius: 6px;
@@ -69,7 +108,7 @@
   .char .sign {
     position: absolute; top: -18px; left: 50%; transform: translateX(-50%) rotate(-4deg);
     background: #fffbe6; color: #222; font-size: 10px; font-weight: bold;
-    padding: 2px 5px; border: 2px solid #8b5a2b; border-radius: 3px; white-space: nowrap;
+    padding: 2px 5px; border: 2px solid #8b5a2b; border-radius: 3px; white-space: nowrap; z-index: 1;
   }
   .char .timer {
     height: 4px; background: rgba(255,255,255,.25); border-radius: 2px; margin: 3px auto 0; width: 60px; overflow: hidden;
@@ -86,7 +125,22 @@
   .fx.good { color: var(--green); }
   .fx.bad { color: var(--red); }
   .fx.bam { color: var(--yellow); font-size: 34px; }
+  .fx.combo { color: #ff9800; font-size: 30px; }
+  .fx.bonus { color: #64b5f6; font-size: 30px; }
   @keyframes rise { from { transform: translate(-50%, 0) scale(.8); opacity: 1; } to { transform: translate(-50%, -70px) scale(1.2); opacity: 0; } }
+  #banner {
+    position: fixed; left: 50%; top: 45%; transform: translate(-50%, -50%);
+    z-index: 15; pointer-events: none; font-size: 54px; font-weight: 900; color: var(--yellow);
+    text-shadow: 3px 3px 0 #000, -3px -3px 0 #000, 3px -3px 0 #000, -3px 3px 0 #000;
+    width: 92vw; text-align: center; line-height: 1.1; opacity: 0;
+  }
+  #banner.show { animation: banner 1.4s ease-out; }
+  @keyframes banner {
+    0% { opacity: 0; transform: translate(-50%, -50%) scale(2.5) rotate(-6deg); }
+    15% { opacity: 1; transform: translate(-50%, -50%) scale(1) rotate(-3deg); }
+    80% { opacity: 1; }
+    100% { opacity: 0; transform: translate(-50%, -50%) scale(1.1) rotate(-3deg); }
+  }
   .shake { animation: shake .3s; }
   @keyframes shake {
     0%,100% { transform: translate(0,0); } 25% { transform: translate(-8px, 4px); }
@@ -98,39 +152,61 @@
   }
   .overlay.hidden { display: none; }
   .card {
-    max-width: 560px; width: 100%; background: var(--panel); border: 3px solid var(--yellow);
+    max-width: 620px; width: 100%; background: var(--panel); border: 3px solid var(--yellow);
     border-radius: 14px; padding: 24px; text-align: center; max-height: 100%; overflow-y: auto;
   }
   .card h1 { font-size: 40px; color: var(--yellow); letter-spacing: 2px; }
   .card h2 { font-size: 28px; color: var(--yellow); margin-bottom: 8px; }
   .card p { margin: 10px 0; line-height: 1.4; }
   .card .sub { opacity: .75; font-style: italic; font-size: 14px; }
+  .levels { display: grid; gap: 12px; margin: 18px 0 8px; }
+  .level {
+    display: flex; align-items: center; gap: 14px; text-align: left; width: 100%;
+    background: rgba(255,255,255,.06); color: var(--text); border: 2px solid rgba(255,255,255,.15);
+    border-radius: 12px; padding: 12px 14px; margin: 0; box-shadow: none; font-size: 16px; font-weight: normal;
+  }
+  .level:hover { border-color: var(--yellow); background: rgba(255,210,63,.08); }
+  .level:active { transform: translateY(2px); box-shadow: none; }
+  .level .num { font-size: 30px; font-weight: 900; color: var(--yellow); width: 30px; text-align: center; }
+  .level .info { flex: 1; }
+  .level .info b { display: block; font-size: 18px; }
+  .level .info small { opacity: .7; }
+  .level .rec { font-size: 13px; opacity: .8; white-space: nowrap; }
   .legend { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 16px 0; text-align: left; }
   .legend div { background: rgba(255,255,255,.05); border-radius: 8px; padding: 10px; }
   .legend h3 { font-size: 15px; margin-bottom: 6px; }
   .legend .g h3 { color: var(--green); }
   .legend .b h3 { color: var(--red); }
   .legend li { list-style: none; font-size: 14px; margin: 4px 0; }
+  .rules { text-align: left; font-size: 14px; background: rgba(255,255,255,.05); border-radius: 8px; padding: 10px 14px; }
+  .rules li { margin: 5px 0 5px 18px; }
   button {
     background: var(--yellow); color: #111; border: none; border-radius: 10px;
     font-size: 20px; font-weight: 900; padding: 12px 28px; cursor: pointer; margin-top: 8px;
-    box-shadow: 0 4px 0 #a88a1a;
+    box-shadow: 0 4px 0 #a88a1a; font-family: inherit;
   }
+  button:active { transform: translateY(3px); box-shadow: 0 1px 0 #a88a1a; }
+  button.ghost { background: transparent; color: var(--text); box-shadow: none; border: 2px solid rgba(255,255,255,.3); }
   button.mute {
     background: none; box-shadow: none; padding: 0 4px; margin: 0; font-size: 20px; line-height: 1;
   }
-  #hud .stats { align-items: center; }
-  button:active { transform: translateY(3px); box-shadow: 0 1px 0 #a88a1a; }
+  .btns { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
   .rank { font-size: 22px; font-weight: bold; color: var(--yellow); margin: 12px 0; }
   .big { font-size: 48px; font-weight: 900; }
-  @media (max-width: 520px) {
+  @media (max-width: 560px) {
     #hud { font-size: 14px; padding: 0 10px; }
     #hud .stats { gap: 10px; }
     #hud .title { display: none; }
+    #subhud { font-size: 13px; padding: 0 10px; }
     .legend { grid-template-columns: 1fr; }
+    .card { padding: 18px 14px; }
     .card h1 { font-size: 30px; }
     .char { width: 80px; }
     .char .art svg { width: 66px; height: 80px; }
+    .char.van { width: 100px; }
+    .char.van .art svg { width: 92px; height: 110px; margin-bottom: -22px; }
+    #banner { font-size: 34px; }
+    .level .rec { display: none; }
   }
 </style>
 </head>
@@ -144,44 +220,56 @@
       <button id="mute" class="mute" title="Couper / remettre le son">🔊</button>
     </div>
   </div>
+  <div id="subhud">
+    <span id="combo">Combo : <b>x1</b> (0)</span>
+    <div class="igpn" id="igpn" title="Trop de bavures et l'IGPN vous mute en province">
+      <span>IGPN</span><div class="bar"><i id="igpnBar"></i></div>
+    </div>
+  </div>
 
-  <div id="arena"></div>
+  <div id="arena" class="lvl-mai"></div>
+  <div id="banner"></div>
 
-  <div id="start" class="overlay">
+  <div id="menu" class="overlay">
     <div class="card">
       <h1>🚔 CRS SIMULATOR</h1>
       <p class="sub">Le simulateur de maintien de l'ordre le plus réaliste de France*</p>
-      <p>Une manif non déclarée dégénère (il y a des pancartes). Le préfet compte sur vous.
-      Interpellez un maximum de fauteurs de trouble en <b>60 secondes</b>… mais attention aux bavures !</p>
-      <div class="legend">
-        <div class="g">
-          <h3>✅ À interpeller</h3>
-          <ul>
-            <li><span class="ico" data-t="manif"></span> Manifestant : <b>+10</b></li>
-            <li><span class="ico" data-t="lyceen"></span> Lycéen : <b>+15</b></li>
-          </ul>
-        </div>
-        <div class="b">
-          <h3>❌ Surtout pas !</h3>
-          <ul>
-            <li><span class="ico" data-t="cnews"></span> Journaliste CNews : <b>−20</b></li>
-            <li><span class="ico" data-t="civil"></span> Policier en civil : <b>−25</b></li>
-            <li><span class="ico" data-t="mamie"></span> Vieille dame : <b>−30</b></li>
-          </ul>
-        </div>
-      </div>
-      <button id="startBtn">EN AVANT !</button>
+      <p>Choisissez votre mission, brigadier :</p>
+      <div class="levels" id="levels"></div>
       <p class="sub">*non</p>
+    </div>
+  </div>
+
+  <div id="brief" class="overlay hidden">
+    <div class="card">
+      <h2 id="briefTitle"></h2>
+      <p id="briefText"></p>
+      <div class="legend">
+        <div class="g"><h3>✅ À interpeller</h3><ul id="briefGood"></ul></div>
+        <div class="b"><h3>❌ Surtout pas !</h3><ul id="briefBad"></ul></div>
+      </div>
+      <ul class="rules">
+        <li><b>Combo</b> : enchaînez les interpellations sans bavure ni fuyard. Tous les 5, le multiplicateur monte (jusqu'à x4).</li>
+        <li><b>Jauge IGPN</b> : chaque bavure la remplit. Si elle déborde, vous êtes muté en province et la partie s'arrête. Elle redescend doucement.</li>
+        <li><span class="ico" data-t="renforts"></span> <b>Renforts</b> : cliquez sur le fourgon pour gagner <b>+5 secondes</b>.</li>
+      </ul>
+      <div class="btns">
+        <button class="ghost" id="backBtn">← Retour</button>
+        <button id="goBtn">EN AVANT !</button>
+      </div>
     </div>
   </div>
 
   <div id="end" class="overlay hidden">
     <div class="card">
-      <h2>FIN DE SERVICE</h2>
+      <h2 id="endTitle">FIN DE SERVICE</h2>
       <div class="big" id="finalScore">0</div>
       <div class="rank" id="rank"></div>
       <p id="details"></p>
-      <button id="againBtn">REPRENDRE LE SERVICE</button>
+      <div class="btns">
+        <button class="ghost" id="menuBtn">Changer de mission</button>
+        <button id="againBtn">REPRENDRE LE SERVICE</button>
+      </div>
     </div>
   </div>
 
@@ -189,47 +277,124 @@
 <script src="audio.js"></script>
 <script>
 (() => {
-  const TYPES = [
-    { id: "manif",   label: "Manifestant",       pts: 10,  weight: 34, life: 1700,
-      signs: ["NON À LA RÉFORME", "64 ANS C'EST NON", "ON LÂCHE RIEN", "RETRAITE À 20 ANS", "MACRON DÉMISSION"] },
-    { id: "lyceen",  label: "Lycéen",            pts: 15,  weight: 24, life: 1300,
-      signs: ["BLOCUS !!!", "PAS DE BAC = PAS DE PB", "J'AI PAS RÉVISÉ", "LA CANTINE EST NULLE"] },
-    { id: "cnews",   label: "Journaliste CNews", pts: -20, weight: 16, life: 2000,
-      signs: ["EN DIRECT", "INSÉCURITÉ ?", "ENSAUVAGEMENT"] },
-    { id: "civil",   label: "Policier en civil", pts: -25, weight: 14, life: 1900,
-      signs: ["CASSEUR (pour de faux)", "JE SUIS DES VÔTRES", "BRASSARD DANS LA POCHE"] },
-    { id: "mamie",   label: "Vieille dame",      pts: -30, weight: 12, life: 2300,
-      signs: ["JE CHERCHE LA PHARMACIE", "OÙ EST MON CHAT ?", "JE VAIS AU MARCHÉ"] },
+  // ---- Personnages ----
+  // pts : points (négatif = bavure) · life : durée à l'écran (ms) · igpn : remplissage de la jauge
+  const CHARS = {
+    manif:     { label: "Manifestant",       pts: 10,  life: 1700, plural: "manifestant(s)",
+                 signs: ["NON À LA RÉFORME", "64 ANS C'EST NON", "ON LÂCHE RIEN", "RETRAITE À 20 ANS", "MACRON DÉMISSION"] },
+    lyceen:    { label: "Lycéen",            pts: 15,  life: 1300, plural: "lycéen(s)",
+                 signs: ["BLOCUS !!!", "PAS DE BAC = PAS DE PB", "J'AI PAS RÉVISÉ", "LA CANTINE EST NULLE", "PARCOURSUP = ARNAQUE"] },
+    blackbloc: { label: "Black bloc",        pts: 30,  life: 900,  plural: "black bloc(s)",
+                 signs: ["ANTI-TOUT", "CAGOULE EN SOLDE", "J'AI PAS PEUR (si)", "VIVE LES PAVÉS"] },
+    prof:      { label: "Prof en grève",     pts: 10,  life: 1800, plural: "prof(s)",
+                 signs: ["PAS DE MOYENS", "35 PAR CLASSE", "JE CORRIGE EN MANIF", "EN GRÈVE (encore)"] },
+    supporter: { label: "Supporter",         pts: 10,  life: 1700, plural: "supporter(s)",
+                 signs: ["ON EST CHAMPIONS !", "ALLEZ LES BLEUS", "KLAXONNEZ !", "ON VA PAS DORMIR"] },
+    ultra:     { label: "Ultra",             pts: 20,  life: 1100, plural: "ultra(s)",
+                 signs: ["FUMIGÈNE ≠ CRIME", "TOUS SUR LES CHAMPS", "ALLUMEZ LE FEU", "AUX ARMES !"] },
+    cnews:     { label: "Journaliste CNews", pts: -20, life: 2000, igpn: 25, plural: "journaliste(s) CNews",
+                 signs: ["EN DIRECT", "INSÉCURITÉ ?", "ENSAUVAGEMENT", "BREAKING NEWS"] },
+    civil:     { label: "Policier en civil", pts: -25, life: 1900, igpn: 30, plural: "collègue(s) en civil",
+                 signs: ["CASSEUR (pour de faux)", "JE SUIS DES VÔTRES", "BRASSARD DANS LA POCHE"] },
+    mamie:     { label: "Vieille dame",      pts: -30, life: 2300, igpn: 35, plural: "mamie(s)",
+                 signs: ["JE CHERCHE LA PHARMACIE", "OÙ EST MON CHAT ?", "JE VAIS AU MARCHÉ"] },
+    depute:    { label: "Député",            pts: -40, life: 2000, igpn: 50, plural: "député(s)",
+                 signs: ["J'AI L'IMMUNITÉ", "VOUS SAVEZ QUI JE SUIS ?", "JE SAISIS LE PRÉFET"] },
+    livreur:   { label: "Livreur",           pts: -15, life: 3200, igpn: 20, plural: "livreur(s)", moving: true,
+                 signs: ["COMMANDE EN RETARD", "TACOS 3 VIANDES", "5 ÉTOILES SVP", "JE PASSE JUSTE"] },
+    proviseur: { label: "Proviseur",         pts: -25, life: 1900, igpn: 30, plural: "proviseur(s)",
+                 signs: ["RETOURNEZ EN COURS", "J'AI APPELÉ LE RECTORAT", "CONSEIL DE DISCIPLINE"] },
+    touriste:  { label: "Touriste",          pts: -20, life: 2100, igpn: 25, plural: "touriste(s)",
+                 signs: ["WHERE IS LOUVRE ?", "SELFIE ?", "I LOVE PARIS", "IS THIS NORMAL ?"] },
+    renforts:  { label: "Renforts +5 s",     pts: 0,   life: 1600, bonus: true, signs: [] },
+  };
+
+  const LEVELS = [
+    { id: "mai", name: "Manif du 1er mai", cls: "lvl-mai", short: "Cortège syndical, merguez et pavés.",
+      brief: "Le cortège déborde de la place de la République. Les syndicats sont là, les black blocs aussi, et un député s'est glissé dans la foule pour faire des photos.",
+      weights: { manif: 32, lyceen: 10, blackbloc: 8, cnews: 12, civil: 10, mamie: 10, depute: 5, livreur: 7, renforts: 2 },
+      rush: { text: "ÇA CHARGE !", types: ["manif", "manif", "manif", "blackbloc"] } },
+    { id: "blocus", name: "Blocus du lycée", cls: "lvl-blocus", short: "Poubelles devant le portail, 7 h 45.",
+      brief: "Les lycéens ont empilé les poubelles devant le portail. Les profs grévistes les soutiennent, le proviseur essaie de faire rentrer tout le monde.",
+      weights: { lyceen: 34, prof: 14, blackbloc: 4, proviseur: 12, mamie: 8, cnews: 8, civil: 8, livreur: 6, renforts: 2 },
+      rush: { text: "BLOCUS !", types: ["lyceen"] } },
+    { id: "cdm", name: "Finale de Coupe du monde", cls: "lvl-cdm", short: "Les Champs-Élysées, 2 h du matin.",
+      brief: "La France est championne du monde. Un million de personnes sur les Champs-Élysées, des fumigènes partout et des touristes perdus au milieu.",
+      weights: { supporter: 30, ultra: 14, blackbloc: 5, touriste: 14, cnews: 8, civil: 9, mamie: 6, depute: 5, livreur: 6, renforts: 2 },
+      rush: { text: "LES ULTRAS DÉBARQUENT !", types: ["ultra", "supporter", "supporter"] } },
   ];
-  const TOTAL_WEIGHT = TYPES.reduce((s, t) => s + t.weight, 0);
+
   const GAME_TIME = 60;
+  const MAX_MULT = 4;
 
-  const arena = document.getElementById("arena");
-  const scoreEl = document.getElementById("score");
-  const timeEl = document.getElementById("time");
-  const bestEl = document.getElementById("best");
-  const startOv = document.getElementById("start");
-  const endOv = document.getElementById("end");
+  const $ = id => document.getElementById(id);
+  const arena = $("arena"), scoreEl = $("score"), timeEl = $("time"), bestEl = $("best");
+  const comboEl = $("combo"), igpnEl = $("igpn"), igpnBar = $("igpnBar"), banner = $("banner");
+  const menuOv = $("menu"), briefOv = $("brief"), endOv = $("end");
 
-  let best = 0;
-  try { best = parseInt(localStorage.getItem("crs-best") || "0", 10) || 0; } catch (e) {}
-  bestEl.textContent = best;
+  const bestKey = lvl => "crs-best-" + lvl.id;
+  function getBest(lvl) {
+    try { return parseInt(localStorage.getItem(bestKey(lvl)) || "0", 10) || 0; } catch (e) { return 0; }
+  }
 
-  let score, timeLeft, running, spawnTimer, clockTimer, stats;
+  let level = LEVELS[0];
+  let score, timeLeft, running, spawnTimer, rushTimer, clockTimer, stats, combo, igpn, endReason;
 
   // --- Sons : voir audio.js ---
   const snd = CRSAudio;
-  const muteBtn = document.getElementById("mute");
+  const muteBtn = $("mute");
   const muteIcon = () => { muteBtn.textContent = snd.isMuted() ? "🔇" : "🔊"; };
   muteIcon();
   muteBtn.addEventListener("click", (ev) => { ev.stopPropagation(); snd.init(); snd.toggleMute(); muteIcon(); muteBtn.blur(); });
   const HIT_SOUNDS = {
     manif: () => { snd.sfx.hit(); snd.sfx.points(false); },
     lyceen: () => { snd.sfx.hit(); snd.sfx.squeak(); snd.sfx.points(true); },
+    blackbloc: () => { snd.sfx.hit(); snd.sfx.hit(); snd.sfx.points(true); },
+    prof: () => { snd.sfx.hit(); snd.sfx.points(false); },
+    supporter: () => { snd.sfx.hit(); snd.sfx.points(false); },
+    ultra: () => { snd.sfx.hit(); snd.sfx.points(true); },
     cnews: () => { snd.sfx.camera(); snd.sfx.fail(); },
     civil: () => { snd.sfx.whistle(); snd.sfx.fail(); },
     mamie: () => { snd.sfx.oldLady(); snd.sfx.fail(); },
+    depute: () => { snd.sfx.camera(); snd.sfx.alarm(); snd.sfx.fail(); },
+    livreur: () => { snd.sfx.bell(); snd.sfx.fail(); },
+    proviseur: () => { snd.sfx.schoolBell(); snd.sfx.fail(); },
+    touriste: () => { snd.sfx.camera(); snd.sfx.fail(); },
+    renforts: () => { snd.sfx.bonus(); },
   };
+
+  // --- Menu des niveaux ---
+  function renderMenu() {
+    $("levels").innerHTML = "";
+    LEVELS.forEach((lvl, i) => {
+      const b = document.createElement("button");
+      b.className = "level";
+      b.innerHTML = `<span class="num">${i + 1}</span><span class="info"><b>${lvl.name}</b><small>${lvl.short}</small></span>` +
+        `<span class="rec">Record : ${getBest(lvl)}</span>`;
+      b.addEventListener("click", () => showBrief(lvl));
+      $("levels").appendChild(b);
+    });
+  }
+
+  function showBrief(lvl) {
+    level = lvl;
+    $("briefTitle").textContent = lvl.name;
+    $("briefText").textContent = lvl.brief;
+    const types = Object.keys(lvl.weights).filter(k => !CHARS[k].bonus);
+    const item = k => `<li><span class="ico">${CRSArt[k]()}</span> ${CHARS[k].label} : <b>${CHARS[k].pts > 0 ? "+" : "−"}${Math.abs(CHARS[k].pts)}</b></li>`;
+    $("briefGood").innerHTML = types.filter(k => CHARS[k].pts > 0).map(item).join("");
+    $("briefBad").innerHTML = types.filter(k => CHARS[k].pts < 0).map(item).join("");
+    menuOv.classList.add("hidden");
+    endOv.classList.add("hidden");
+    briefOv.classList.remove("hidden");
+  }
+
+  function showMenu() {
+    renderMenu();
+    briefOv.classList.add("hidden");
+    endOv.classList.add("hidden");
+    menuOv.classList.remove("hidden");
+  }
 
   // --- Décor : fumée de lacrymo ---
   function addSmoke() {
@@ -246,31 +411,57 @@
   }
 
   function pickType() {
-    let r = Math.random() * TOTAL_WEIGHT;
-    for (const t of TYPES) { if ((r -= t.weight) < 0) return t; }
-    return TYPES[0];
+    const entries = Object.entries(level.weights);
+    let r = Math.random() * entries.reduce((s, [, w]) => s + w, 0);
+    for (const [k, w] of entries) { if ((r -= w) < 0) return k; }
+    return entries[0][0];
   }
 
   function difficulty() {
     // 0 au début -> 1 à la fin
-    return 1 - timeLeft / GAME_TIME;
+    return Math.min(1, Math.max(0, 1 - timeLeft / GAME_TIME));
   }
 
-  function spawn() {
-    if (!running) return;
-    const t = pickType();
+  function multiplier() {
+    return Math.min(MAX_MULT, 1 + Math.floor(combo / 5));
+  }
+
+  function updateHud() {
+    scoreEl.textContent = score;
+    timeEl.textContent = timeLeft;
+    const m = multiplier();
+    comboEl.innerHTML = `Combo : <b>x${m}</b> (${combo})`;
+    comboEl.classList.toggle("hot", m > 1);
+    igpnBar.style.width = Math.min(100, igpn) + "%";
+    igpnEl.classList.toggle("danger", igpn >= 70);
+  }
+
+  function makeChar(id, x, y) {
+    const t = CHARS[id];
     const el = document.createElement("div");
-    el.className = "char";
-    const sign = t.signs[Math.floor(Math.random() * t.signs.length)];
-    el.innerHTML = `<div class="sign">${sign}</div><div class="art">${CRSArt[t.id]()}</div>
-      <div class="label">${t.label}</div><div class="timer"><i></i></div>`;
+    el.className = "char" + (t.bonus ? " van" : "");
+    const sign = t.signs.length ? `<div class="sign">${t.signs[Math.floor(Math.random() * t.signs.length)]}</div>` : "";
+    el.innerHTML = `${sign}<div class="art">${CRSArt[id]()}</div><div class="label">${t.label}</div><div class="timer"><i></i></div>`;
 
     const w = arena.clientWidth, h = arena.clientHeight;
-    const cw = w < 520 ? 80 : 96, ch = w < 520 ? 120 : 136;
-    el.style.left = Math.max(4, Math.random() * (w - cw - 8)) + "px";
-    el.style.top = Math.max(22, Math.random() * (h - ch - 8)) + "px";
-
+    const small = w < 560;
+    const cw = small ? 80 : 96, ch = small ? 120 : 136;
     const life = t.life * (1 - 0.35 * difficulty());
+    const top = y != null ? y : Math.random() * (h - ch - 8);
+    el.style.top = Math.max(22, Math.min(h - ch - 4, top)) + "px";
+
+    if (t.moving) {
+      // Traverse l'écran
+      const fromLeft = Math.random() < .5;
+      if (!fromLeft) el.classList.add("flip");
+      el.style.left = (fromLeft ? -cw : w) + "px";
+      el.style.transition = `left ${life}ms linear`;
+      requestAnimationFrame(() => requestAnimationFrame(() => { el.style.left = (fromLeft ? w : -cw) + "px"; }));
+    } else {
+      const left = x != null ? x : Math.random() * (w - cw - 8);
+      el.style.left = Math.max(4, Math.min(w - cw - 4, left)) + "px";
+    }
+
     const bar = el.querySelector(".timer i");
     bar.style.transition = `transform ${life}ms linear`;
     requestAnimationFrame(() => requestAnimationFrame(() => { bar.style.transform = "scaleX(0)"; }));
@@ -283,7 +474,7 @@
       setTimeout(() => el.remove(), 250);
     };
     const expire = setTimeout(() => {
-      if (!done && t.pts > 0) stats.escaped++;
+      if (!done && running && t.pts > 0) escaped();
       remove();
     }, life);
 
@@ -291,14 +482,42 @@
       ev.stopPropagation();
       if (done || !running) return;
       clearTimeout(expire);
-      hit(t, ev.clientX, ev.clientY - 56);
+      const r = arena.getBoundingClientRect();
+      hit(id, ev.clientX - r.left, ev.clientY - r.top);
       remove();
     });
 
     arena.appendChild(el);
+  }
+
+  function spawn() {
+    if (!running) return;
+    makeChar(pickType());
     snd.sfx.pop();
     const delay = 750 - 450 * difficulty() + Math.random() * 250;
     spawnTimer = setTimeout(spawn, delay);
+  }
+
+  // Grosse vague : plusieurs cibles regroupées d'un coup
+  function rush() {
+    if (!running) return;
+    showBanner(level.rush.text);
+    snd.sfx.charge();
+    const w = arena.clientWidth, h = arena.clientHeight;
+    const cx = 80 + Math.random() * Math.max(1, w - 260), cy = 40 + Math.random() * Math.max(1, h - 260);
+    const n = 3 + Math.floor(Math.random() * 3);
+    for (let i = 0; i < n; i++) {
+      const id = level.rush.types[Math.floor(Math.random() * level.rush.types.length)];
+      setTimeout(() => { if (running) makeChar(id, cx + (Math.random() - .5) * 220, cy + (Math.random() - .5) * 160); }, i * 90);
+    }
+    rushTimer = setTimeout(rush, 9000 + Math.random() * 5000);
+  }
+
+  function showBanner(text) {
+    banner.textContent = text;
+    banner.classList.remove("show");
+    void banner.offsetWidth;
+    banner.classList.add("show");
   }
 
   function fx(text, x, y, cls) {
@@ -311,86 +530,129 @@
     setTimeout(() => f.remove(), 900);
   }
 
+  function breakCombo() {
+    if (combo >= 5) snd.sfx.comboLost();
+    combo = 0;
+  }
+
+  function escaped() {
+    stats.escaped++;
+    breakCombo();
+    updateHud();
+  }
+
   const BAMS = ["PAF !", "BIM !", "INTERPELLÉ !", "CIRCULEZ !", "GAZÉ !", "EMBARQUÉ !"];
   const OOPS = ["BAVURE !", "OUPS…", "IGPN !", "AÏE AÏE AÏE", "ÇA VA FAIRE UN SCANDALE"];
 
-  function hit(t, x, y) {
-    score += t.pts;
-    scoreEl.textContent = score;
-    if (t.pts > 0) {
+  function hit(id, x, y) {
+    const t = CHARS[id];
+    HIT_SOUNDS[id]();
+    if (t.bonus) {
+      timeLeft += 5;
+      stats.bonus++;
+      fx("RENFORTS ! +5 s", x, y - 20, "bonus");
+    } else if (t.pts > 0) {
+      const before = multiplier();
+      combo++;
+      stats.maxCombo = Math.max(stats.maxCombo, combo);
+      const m = multiplier();
+      const pts = t.pts * m;
+      score += pts;
       stats.good++;
-      HIT_SOUNDS[t.id]();
       fx(BAMS[Math.floor(Math.random() * BAMS.length)], x, y - 30, "bam");
-      fx("+" + t.pts, x, y + 10, "good");
+      fx("+" + pts, x, y + 10, "good");
+      if (m > before) {
+        snd.sfx.comboUp(m);
+        fx(`COMBO x${m} !`, x, y - 70, "combo");
+      }
     } else {
+      score += t.pts;
       stats.bad++;
-      stats.badList[t.id] = (stats.badList[t.id] || 0) + 1;
-      HIT_SOUNDS[t.id]();
+      stats.badList[id] = (stats.badList[id] || 0) + 1;
+      breakCombo();
+      const wasDanger = igpn >= 70;
+      igpn += t.igpn;
       fx(OOPS[Math.floor(Math.random() * OOPS.length)], x, y - 30, "bad");
       fx(t.pts, x, y + 10, "bad");
       arena.classList.remove("shake");
       void arena.offsetWidth;
       arena.classList.add("shake");
+      if (igpn >= 100) { updateHud(); end("igpn"); return; }
+      if (igpn >= 70 && !wasDanger) { snd.sfx.alarm(); showBanner("L'IGPN VOUS SURVEILLE…"); }
     }
+    updateHud();
   }
 
   arena.addEventListener("pointerdown", () => { if (running) snd.sfx.whoosh(); });
 
   function start() {
-    score = 0; timeLeft = GAME_TIME; running = true;
-    stats = { good: 0, bad: 0, escaped: 0, badList: {} };
-    scoreEl.textContent = 0;
-    timeEl.textContent = timeLeft;
+    score = 0; timeLeft = GAME_TIME; running = true; combo = 0; igpn = 0; endReason = null;
+    stats = { good: 0, bad: 0, escaped: 0, bonus: 0, maxCombo: 0, badList: {} };
+    arena.className = level.cls;
+    bestEl.textContent = getBest(level);
     arena.querySelectorAll(".char, .fx").forEach(e => e.remove());
-    startOv.classList.add("hidden");
+    updateHud();
+    menuOv.classList.add("hidden");
+    briefOv.classList.add("hidden");
     endOv.classList.add("hidden");
     snd.init();
     snd.sfx.siren();
-    snd.startMusic();
+    snd.startMusic(LEVELS.indexOf(level));
     spawn();
+    rushTimer = setTimeout(rush, 6000 + Math.random() * 3000);
     clockTimer = setInterval(() => {
       timeLeft--;
-      timeEl.textContent = timeLeft;
+      igpn = Math.max(0, igpn - 2);
       snd.setIntensity(difficulty());
       if (timeLeft > 0 && timeLeft <= 5) snd.sfx.tick(timeLeft === 1);
-      if (timeLeft <= 0) end();
+      updateHud();
+      if (timeLeft <= 0) end("time");
     }, 1000);
   }
 
   function rankFor(s) {
+    if (endReason === "igpn") return "🚨 Muté à Mende (Lozère)";
     if (s < 0)   return "🚨 Suspendu par l'IGPN";
     if (s < 100) return "🥱 Stagiaire à la buvette";
     if (s < 250) return "👮 Brigadier zélé";
-    if (s < 400) return "🎖️ Capitaine de compagnie";
-    if (s < 600) return "⭐ Chouchou du préfet";
+    if (s < 450) return "🎖️ Capitaine de compagnie";
+    if (s < 700) return "⭐ Chouchou du préfet";
     return "🏆 Médaille du Ministre de l'Intérieur";
   }
 
-  function end() {
+  function end(reason) {
+    if (!running) return;
     running = false;
+    endReason = reason;
     clearTimeout(spawnTimer);
+    clearTimeout(rushTimer);
     clearInterval(clockTimer);
     arena.querySelectorAll(".char").forEach(e => e.classList.add("leaving"));
     snd.stopMusic();
-    snd.sfx.end(score >= 250);
-    if (score > best) {
-      best = score;
-      try { localStorage.setItem("crs-best", String(best)); } catch (e) {}
-      bestEl.textContent = best;
+    snd.sfx.end(reason === "time" && score >= 250);
+    if (score > getBest(level)) {
+      try { localStorage.setItem(bestKey(level), String(score)); } catch (e) {}
+      bestEl.textContent = score;
     }
-    document.getElementById("finalScore").textContent = score + " pts";
-    document.getElementById("rank").textContent = rankFor(score);
-    const names = { cnews: "journaliste(s) CNews", civil: "collègue(s) en civil", mamie: "mamie(s)" };
-    const bavures = Object.entries(stats.badList).map(([k, v]) => `${v} ${names[k]}`).join(", ");
-    document.getElementById("details").innerHTML =
-      `Interpellations : <b>${stats.good}</b> · Fuyards : <b>${stats.escaped}</b><br>` +
+    $("endTitle").textContent = reason === "igpn" ? "MUTÉ EN PROVINCE" : "FIN DE SERVICE";
+    $("finalScore").textContent = score + " pts";
+    $("rank").textContent = rankFor(score);
+    const bavures = Object.entries(stats.badList).map(([k, v]) => `${v} ${CHARS[k].plural}`).join(", ");
+    $("details").innerHTML =
+      (reason === "igpn" ? "L'IGPN a ouvert une enquête (elle n'aboutira jamais, mais quand même).<br>" : "") +
+      `${level.name}<br>` +
+      `Interpellations : <b>${stats.good}</b> · Fuyards : <b>${stats.escaped}</b> · Meilleur combo : <b>${stats.maxCombo}</b>` +
+      (stats.bonus ? ` · Renforts : <b>${stats.bonus}</b>` : "") + "<br>" +
       (stats.bad ? `Bavures : <b>${stats.bad}</b> (${bavures})` : "Aucune bavure. Le préfet est ému.");
     setTimeout(() => endOv.classList.remove("hidden"), 300);
   }
 
-  document.getElementById("startBtn").addEventListener("click", start);
-  document.getElementById("againBtn").addEventListener("click", start);
-  document.querySelectorAll(".ico").forEach(e => { e.innerHTML = CRSArt[e.dataset.t](); });
+  $("goBtn").addEventListener("click", start);
+  $("againBtn").addEventListener("click", start);
+  $("backBtn").addEventListener("click", showMenu);
+  $("menuBtn").addEventListener("click", showMenu);
+  document.querySelectorAll(".ico[data-t]").forEach(e => { e.innerHTML = CRSArt[e.dataset.t](); });
+  renderMenu();
   addSmoke();
 })();
 </script>
