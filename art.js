@@ -369,5 +369,31 @@ window.CRSArt = (() => {
     </svg>`;
   }
 
-  return { manif, lyceen, cnews, civil, mamie, blackbloc, prof, supporter, ultra, depute, livreur, proviseur, touriste, renforts };
+  // Boss : la daronne de TT (bigoudis, robe de chambre léopard, claquette à la main)
+  function daronne() {
+    const robe = pick(["#d81b60", "#8e24aa", "#c2185b", "#6a1b9a"]);
+    let spots = "";
+    for (let i = 0; i < 14; i++) {
+      const x = 34 + Math.random() * 32, y = 50 + Math.random() * 46;
+      spots += `<ellipse cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" rx="2.4" ry="1.8" fill="none" stroke="#2b1a10" stroke-width="1"/>`;
+    }
+    let curlers = "";
+    [[38, 15], [46, 11], [54, 11], [62, 15], [34, 23], [66, 23]].forEach(([x, y], i) => {
+      curlers += `<rect x="${x - 3.5}" y="${y - 2.5}" width="7" height="5" rx="2" fill="${["#ff80ab", "#80d8ff", "#ccff90"][i % 3]}" stroke="rgba(0,0,0,.3)" stroke-width=".6"/>`;
+    });
+    const o = {
+      skin: pick(SKIN), hair: pick(["#4a2f1b", "#2b1d14", "#7a4a22", "#a33d1f"]), hairStyle: "long",
+      shirt: robe, skirt: robe, tights: null, shoes: "#ff80ab",
+      angry: true, mouth: "shout", armR: "up", blush: true,
+      torso: spots + `<rect x="32" y="74" width="36" height="4" fill="#ffd54f"/><path d="M50 46 L44 74 M50 46 L56 74" stroke="rgba(255,255,255,.35)" stroke-width="1.5"/>`,
+      front: curlers +
+        // Claquette brandie
+        `<g transform="rotate(-25 72 8)"><rect x="64" y="-6" width="15" height="26" rx="7" fill="#1565c0"/><rect x="64" y="4" width="15" height="5" fill="#fff"/></g>` +
+        // Pantoufles à pompons
+        `<circle cx="42" cy="108" r="3.5" fill="#fff"/><circle cx="58" cy="108" r="3.5" fill="#fff"/>`,
+    };
+    return person(o).replace('viewBox="0 0 100 120"', 'viewBox="0 -10 100 130"');
+  }
+
+  return { manif, lyceen, cnews, civil, mamie, blackbloc, prof, supporter, ultra, depute, livreur, proviseur, touriste, renforts, daronne };
 })();

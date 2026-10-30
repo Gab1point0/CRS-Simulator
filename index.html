@@ -100,6 +100,29 @@
   .char.van { width: 120px; }
   .char.van .art svg { width: 110px; height: 132px; margin-bottom: -26px; }
   .char.van .label { background: #1a3d8f; }
+  .boss {
+    position: absolute; z-index: 4; text-align: center; cursor: pointer;
+    animation: bossIn .5s cubic-bezier(.2,1.6,.4,1);
+    transform-origin: bottom center;
+  }
+  .boss .art svg { display: block; height: 100%; width: auto; margin: 0 auto; filter: drop-shadow(0 8px 6px rgba(0,0,0,.5)); }
+  .boss .art { height: calc(100% - 66px); }
+  .boss.hit .art svg { animation: wobble .12s; }
+  .boss .name {
+    display: inline-block; padding: 4px 12px; border-radius: 8px; background: #d81b60;
+    font-weight: 900; font-size: 20px; border: 2px solid #fff; white-space: nowrap;
+  }
+  .boss .hp { width: 80%; max-width: 260px; height: 12px; margin: 6px auto 0; border-radius: 6px; background: rgba(0,0,0,.5); border: 2px solid #fff; overflow: hidden; }
+  .boss .hp i { display: block; height: 100%; width: 100%; background: linear-gradient(90deg, #ff1744, #ff9800); transition: width .1s; }
+  .boss .bubble {
+    position: absolute; top: 4%; left: 62%; background: #fff; color: #111; font-weight: 900; font-size: 15px;
+    padding: 8px 12px; border-radius: 14px; border: 3px solid #111; max-width: 260px; transform: rotate(4deg); z-index: 1;
+  }
+  .boss.leaving { animation: bossOut .4s forwards; pointer-events: none; }
+  @keyframes bossIn { from { transform: translateY(110%) scale(.6); } to { transform: none; } }
+  @keyframes bossOut { to { transform: translateY(110%) rotate(-12deg); opacity: 0; } }
+  @keyframes wobble { 0%,100% { transform: none; } 30% { transform: scale(.94, 1.05) rotate(-3deg); } 70% { transform: scale(1.04, .96) rotate(2deg); } }
+  @media (max-width: 560px) { .boss .bubble { left: 35%; top: 0; font-size: 12px; max-width: 58vw; } .boss .name { font-size: 16px; } }
   .ico svg { width: 30px; height: 36px; vertical-align: middle; }
   .char .label {
     display: inline-block; margin-top: 2px; padding: 2px 6px; border-radius: 6px;
@@ -251,6 +274,7 @@
       <ul class="rules">
         <li><b>Combo</b> : enchaînez les interpellations sans bavure ni fuyard. Tous les 5, le multiplicateur monte (jusqu'à x4).</li>
         <li><b>Jauge IGPN</b> : chaque bavure la remplit. Si elle déborde, vous êtes muté en province et la partie s'arrête. Elle redescend doucement.</li>
+        <li><span class="ico" data-t="daronne"></span> <b>La daronne de TT</b> : elle débarque de temps en temps, en géant. Cliquez dessus un max : <b>+5 par coup</b>, et <b>+150</b> si vous la mettez K.O. en 30 coups avant qu'elle reparte.</li>
         <li><span class="ico" data-t="renforts"></span> <b>Renforts</b> : <span id="bonusRule"></span></li>
       </ul>
       <div class="btns">
@@ -343,7 +367,7 @@
   }
 
   let level = LEVELS[0];
-  let score, timeLeft, elapsed, running, spawnTimer, rushTimer, clockTimer, stats, combo, igpn, endReason;
+  let score, timeLeft, elapsed, running, spawnTimer, rushTimer, bossTimer, boss, clockTimer, stats, combo, igpn, endReason;
 
   // --- Sons : voir audio.js ---
   const snd = CRSAudio;
@@ -501,8 +525,75 @@
     arena.appendChild(el);
   }
 
+  // ---- Boss : la daronne de TT ----
+  const BOSS_HITS = 30, BOSS_TIME = 7000, BOSS_PTS = 5, BOSS_KO = 150;
+  const BOSS_LINES = ["TU VAS VOIR QUAND JE VAIS LE DIRE À TON PÈRE !", "RANGE TA CHAMBRE !", "C'EST QUI TON CHEF ?", "J'AI FAIT DES PÂTES !",
+    "ON N'EST PAS À L'HÔTEL ICI !", "TU CROIS QUE L'ARGENT TOMBE DU CIEL ?", "MONTE TOUT DE SUITE !"];
+
+  function spawnBoss() {
+    if (!running || boss) return;
+    showBanner("LA DARONNE DE TT DÉBARQUE !");
+    snd.sfx.bossIn();
+    const w = arena.clientWidth, h = arena.clientHeight;
+    const bh = Math.min(h * .9, 620), bw = Math.min(w * .9, bh * .78);
+    const el = document.createElement("div");
+    el.className = "boss";
+    el.style.width = bw + "px";
+    el.style.height = bh + "px";
+    el.style.left = (w - bw) / 2 + (Math.random() - .5) * Math.max(0, w - bw) * .6 + "px";
+    el.style.top = (h - bh) + "px";
+    el.innerHTML = `<div class="bubble"></div><div class="art">${CRSArt.daronne()}</div><div class="name">LA DARONNE DE TT</div><div class="hp"><i></i></div>`;
+    const bubble = el.querySelector(".bubble"), hpBar = el.querySelector(".hp i");
+    const say = () => { bubble.textContent = BOSS_LINES[Math.floor(Math.random() * BOSS_LINES.length)]; };
+    say();
+    boss = { el, hits: 0, talk: setInterval(say, 1800) };
+    boss.timer = setTimeout(() => leaveBoss(false), BOSS_TIME);
+
+    el.addEventListener("pointerdown", (ev) => {
+      ev.stopPropagation();
+      if (!running || !boss || boss.el !== el) return;
+      boss.hits++;
+      stats.bossHits++;
+      score += BOSS_PTS;
+      snd.sfx.bossHit(boss.hits);
+      const r = arena.getBoundingClientRect();
+      const x = ev.clientX - r.left, y = ev.clientY - r.top;
+      fx(boss.hits % 5 === 0 ? ["BAM !", "POW !", "SBAM !", "VLAN !"][boss.hits % 4] : "+" + BOSS_PTS, x + (Math.random() - .5) * 40, y - 20, boss.hits % 5 === 0 ? "bam" : "good");
+      hpBar.style.width = Math.max(0, 100 - boss.hits / BOSS_HITS * 100) + "%";
+      el.classList.remove("hit"); void el.offsetWidth; el.classList.add("hit");
+      if (boss.hits >= BOSS_HITS) {
+        score += BOSS_KO;
+        stats.bossKo++;
+        snd.sfx.bossKo();
+        showBanner(`K.O. ! +${BOSS_KO}`);
+        leaveBoss(true);
+      }
+      updateHud();
+    });
+    arena.appendChild(el);
+  }
+
+  function leaveBoss(ko) {
+    if (!boss) return;
+    clearTimeout(boss.timer);
+    clearInterval(boss.talk);
+    const el = boss.el;
+    boss = null;
+    if (!ko && running) { snd.sfx.bossOut(); showBanner("ELLE EST REPARTIE…"); }
+    el.classList.add("leaving");
+    setTimeout(() => el.remove(), 400);
+    scheduleBoss();
+  }
+
+  function scheduleBoss() {
+    if (!running) return;
+    bossTimer = setTimeout(spawnBoss, (level.endless ? 35000 : 20000) + Math.random() * 10000);
+  }
+
   function spawn() {
     if (!running) return;
+    // Pendant que la daronne est là, les autres se planquent
+    if (boss) { spawnTimer = setTimeout(spawn, 400); return; }
     makeChar(pickType());
     snd.sfx.pop();
     const delay = 750 - 450 * difficulty() + Math.random() * 250;
@@ -512,6 +603,7 @@
   // Grosse vague : plusieurs cibles regroupées d'un coup
   function rush() {
     if (!running) return;
+    if (boss) { rushTimer = setTimeout(rush, 3000); return; }
     showBanner(level.rush.text);
     snd.sfx.charge();
     const w = arena.clientWidth, h = arena.clientHeight;
@@ -603,7 +695,8 @@
 
   function start() {
     score = 0; timeLeft = GAME_TIME; elapsed = 0; running = true; combo = 0; igpn = 0; endReason = null;
-    stats = { good: 0, bad: 0, escaped: 0, bonus: 0, maxCombo: 0, badList: {} };
+    stats = { good: 0, bad: 0, escaped: 0, bonus: 0, maxCombo: 0, bossHits: 0, bossKo: 0, badList: {} };
+    boss = null;
     arena.className = level.cls;
     bestEl.textContent = getBest(level);
     arena.querySelectorAll(".char, .fx").forEach(e => e.remove());
@@ -616,6 +709,7 @@
     snd.startMusic(level.endless ? 0 : LEVELS.indexOf(level));
     spawn();
     rushTimer = setTimeout(rush, 6000 + Math.random() * 3000);
+    scheduleBoss();
     clockTimer = setInterval(() => {
       elapsed++;
       igpn = Math.max(0, igpn - 2);
@@ -660,6 +754,8 @@
     endReason = reason;
     clearTimeout(spawnTimer);
     clearTimeout(rushTimer);
+    clearTimeout(bossTimer);
+    leaveBoss(true);
     clearInterval(clockTimer);
     arena.querySelectorAll(".char").forEach(e => e.classList.add("leaving"));
     snd.stopMusic();
@@ -677,6 +773,7 @@
       `${level.name}` + (level.endless ? ` · Tenu <b>${fmtTime(elapsed)}</b>` : "") + "<br>" +
       `Interpellations : <b>${stats.good}</b> · Fuyards : <b>${stats.escaped}</b> · Meilleur combo : <b>${stats.maxCombo}</b>` +
       (stats.bonus ? ` · Renforts : <b>${stats.bonus}</b>` : "") + "<br>" +
+      (stats.bossHits ? `Daronne de TT : <b>${stats.bossHits}</b> coups` + (stats.bossKo ? `, <b>${stats.bossKo}</b> K.O.` : "") + "<br>" : "") +
       (stats.bad ? `Bavures : <b>${stats.bad}</b> (${bavures})` : "Aucune bavure. Le préfet est ému.");
     setTimeout(() => endOv.classList.remove("hidden"), 300);
   }

@@ -183,6 +183,33 @@ window.CRSAudio = (() => {
       o.connect(g); g.connect(f); f.connect(sfxBus);
       o.start(t); lfo.start(t); o.stop(t + .5); lfo.stop(t + .5);
     },
+    // La daronne débarque : roulement de tambour + gros boum
+    bossIn() {
+      if (!ctx) return;
+      const t = now();
+      for (let i = 0; i < 12; i++) noise({ t: t + i * .05, dur: .05, vol: .2 + i * .02, freq: 1500, q: .8 });
+      tone({ freq: 110, to: 30, type: "sine", t: t + .65, dur: .6, vol: .9 });
+      tone({ freq: 220, to: 55, type: "sawtooth", t: t + .65, dur: .5, vol: .15, filter: 800 });
+    },
+    // Coup sur la daronne : impact dont la hauteur varie
+    bossHit(n) {
+      if (!ctx) return;
+      const t = now(), f = 160 + (n % 8) * 18;
+      tone({ freq: f, to: f / 3, type: "sine", t, dur: .12, vol: .5 });
+      noise({ t, dur: .06, vol: .35, freq: 1200 + (n % 5) * 300, q: 1 });
+    },
+    // K.O. : fanfare
+    bossKo() {
+      if (!ctx) return;
+      const t = now();
+      [60, 64, 67, 72, 67, 72, 76, 79].forEach((n, i) => tone({ freq: midi(n), type: "square", t: t + i * .1, dur: i === 7 ? .6 : .12, vol: .08, filter: 3500 }));
+      tone({ freq: 80, to: 30, type: "sine", t, dur: .5, vol: .8 });
+    },
+    // Elle repart : "pfff"
+    bossOut() {
+      if (!ctx) return;
+      noise({ dur: .5, vol: .2, freq: 900, to: 300, q: 1.5 });
+    },
     // Apparition discrète
     pop() {
       if (!ctx) return;

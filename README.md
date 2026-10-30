@@ -15,6 +15,7 @@ Petit jeu parodique jouable dans le navigateur : vous incarnez un CRS en pleine 
 - 60 secondes, ça accélère au fil du temps (la musique aussi).
 - **Combo** : tous les 5 interpellations sans bavure ni fuyard, le multiplicateur monte (jusqu'à x4).
 - **Jauge IGPN** : chaque bavure la remplit ; si elle déborde, vous êtes muté en province.
+- **La daronne de TT** : boss géant qui débarque de temps en temps. +5 par clic, +150 si K.O. en 30 coups avant qu'elle reparte (7 s).
 - **Renforts** : cliquez sur le fourgon pour gagner 5 secondes.
 - Des vagues surprises (« ÇA CHARGE ! », « BLOCUS ! ») font apparaître des groupes entiers.
 - Un record par mission, sauvegardé dans le navigateur.
