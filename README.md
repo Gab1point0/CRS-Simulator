@@ -8,6 +8,8 @@ Petit jeu parodique jouable dans le navigateur : vous incarnez un CRS en pleine 
 2. **Blocus du lycée** : lycéens et profs en grève contre le proviseur.
 3. **Finale de Coupe du monde** : supporters et ultras à fumigènes au milieu des touristes.
 
+**∞ Mode infini** : pas de chrono, tous les personnages mélangés, ça accélère sans fin et le quartier change chaque minute. Seule la jauge IGPN peut vous arrêter ; le fourgon y devient « Couverture du préfet » (IGPN −30).
+
 ## Règles
 
 - 60 secondes, ça accélère au fil du temps (la musique aussi).

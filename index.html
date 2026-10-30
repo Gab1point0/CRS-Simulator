@@ -215,7 +215,7 @@
     <div class="title">🚔 CRS SIMULATOR</div>
     <div class="stats">
       <span>Score : <b id="score">0</b></span>
-      <span>Temps : <b id="time">60</b>s</span>
+      <span>Temps : <b id="time">60s</b></span>
       <span>Record : <b id="best">0</b></span>
       <button id="mute" class="mute" title="Couper / remettre le son">🔊</button>
     </div>
@@ -251,7 +251,7 @@
       <ul class="rules">
         <li><b>Combo</b> : enchaînez les interpellations sans bavure ni fuyard. Tous les 5, le multiplicateur monte (jusqu'à x4).</li>
         <li><b>Jauge IGPN</b> : chaque bavure la remplit. Si elle déborde, vous êtes muté en province et la partie s'arrête. Elle redescend doucement.</li>
-        <li><span class="ico" data-t="renforts"></span> <b>Renforts</b> : cliquez sur le fourgon pour gagner <b>+5 secondes</b>.</li>
+        <li><span class="ico" data-t="renforts"></span> <b>Renforts</b> : <span id="bonusRule"></span></li>
       </ul>
       <div class="btns">
         <button class="ghost" id="backBtn">← Retour</button>
@@ -322,7 +322,12 @@
       brief: "La France est championne du monde. Un million de personnes sur les Champs-Élysées, des fumigènes partout et des touristes perdus au milieu.",
       weights: { supporter: 30, ultra: 14, blackbloc: 5, touriste: 14, cnews: 8, civil: 9, mamie: 6, depute: 5, livreur: 6, renforts: 2 },
       rush: { text: "LES ULTRAS DÉBARQUENT !", types: ["ultra", "supporter", "supporter"] } },
+    { id: "infini", name: "Mode infini", cls: "lvl-mai", short: "Pas de chrono. Seule l'IGPN peut vous arrêter.", endless: true,
+      brief: "Pas de fin de service, pas de chrono : la manif ne s'arrête jamais et ça s'accélère sans cesse. Le quartier change chaque minute. Seule l'IGPN peut vous arrêter.",
+      weights: { manif: 14, lyceen: 10, blackbloc: 6, prof: 6, supporter: 8, ultra: 6, cnews: 8, civil: 8, mamie: 7, depute: 4, livreur: 6, proviseur: 5, touriste: 6, renforts: 2 },
+      rush: { text: "ÇA CHARGE !", types: ["manif", "lyceen", "blackbloc", "ultra", "supporter"] } },
   ];
+  const ENDLESS_CYCLE = ["lvl-mai", "lvl-blocus", "lvl-cdm"];
 
   const GAME_TIME = 60;
   const MAX_MULT = 4;
@@ -338,7 +343,7 @@
   }
 
   let level = LEVELS[0];
-  let score, timeLeft, running, spawnTimer, rushTimer, clockTimer, stats, combo, igpn, endReason;
+  let score, timeLeft, elapsed, running, spawnTimer, rushTimer, clockTimer, stats, combo, igpn, endReason;
 
   // --- Sons : voir audio.js ---
   const snd = CRSAudio;
@@ -369,7 +374,7 @@
     LEVELS.forEach((lvl, i) => {
       const b = document.createElement("button");
       b.className = "level";
-      b.innerHTML = `<span class="num">${i + 1}</span><span class="info"><b>${lvl.name}</b><small>${lvl.short}</small></span>` +
+      b.innerHTML = `<span class="num">${lvl.endless ? "∞" : i + 1}</span><span class="info"><b>${lvl.name}</b><small>${lvl.short}</small></span>` +
         `<span class="rec">Record : ${getBest(lvl)}</span>`;
       b.addEventListener("click", () => showBrief(lvl));
       $("levels").appendChild(b);
@@ -384,6 +389,9 @@
     const item = k => `<li><span class="ico">${CRSArt[k]()}</span> ${CHARS[k].label} : <b>${CHARS[k].pts > 0 ? "+" : "−"}${Math.abs(CHARS[k].pts)}</b></li>`;
     $("briefGood").innerHTML = types.filter(k => CHARS[k].pts > 0).map(item).join("");
     $("briefBad").innerHTML = types.filter(k => CHARS[k].pts < 0).map(item).join("");
+    $("bonusRule").innerHTML = lvl.endless
+      ? "le fourgon, c'est le préfet qui vous couvre : la jauge IGPN baisse de <b>30</b>."
+      : "cliquez sur le fourgon pour gagner <b>+5 secondes</b>.";
     menuOv.classList.add("hidden");
     endOv.classList.add("hidden");
     briefOv.classList.remove("hidden");
@@ -418,7 +426,8 @@
   }
 
   function difficulty() {
-    // 0 au début -> 1 à la fin
+    // 0 au début -> 1 à la fin (le mode infini continue jusqu'à 1,3)
+    if (level.endless) return Math.min(1.3, elapsed / 180);
     return Math.min(1, Math.max(0, 1 - timeLeft / GAME_TIME));
   }
 
@@ -428,7 +437,7 @@
 
   function updateHud() {
     scoreEl.textContent = score;
-    timeEl.textContent = timeLeft;
+    timeEl.textContent = level.endless ? fmtTime(elapsed) : timeLeft + "s";
     const m = multiplier();
     comboEl.innerHTML = `Combo : <b>x${m}</b> (${combo})`;
     comboEl.classList.toggle("hot", m > 1);
@@ -436,12 +445,14 @@
     igpnEl.classList.toggle("danger", igpn >= 70);
   }
 
+  const fmtTime = s => Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
+
   function makeChar(id, x, y) {
     const t = CHARS[id];
     const el = document.createElement("div");
     el.className = "char" + (t.bonus ? " van" : "");
     const sign = t.signs.length ? `<div class="sign">${t.signs[Math.floor(Math.random() * t.signs.length)]}</div>` : "";
-    el.innerHTML = `${sign}<div class="art">${CRSArt[id]()}</div><div class="label">${t.label}</div><div class="timer"><i></i></div>`;
+    el.innerHTML = `${sign}<div class="art">${CRSArt[id]()}</div><div class="label">${t.bonus && level.endless ? "Couverture du préfet" : t.label}</div><div class="timer"><i></i></div>`;
 
     const w = arena.clientWidth, h = arena.clientHeight;
     const small = w < 560;
@@ -505,7 +516,7 @@
     snd.sfx.charge();
     const w = arena.clientWidth, h = arena.clientHeight;
     const cx = 80 + Math.random() * Math.max(1, w - 260), cy = 40 + Math.random() * Math.max(1, h - 260);
-    const n = 3 + Math.floor(Math.random() * 3);
+    const n = 3 + Math.floor(Math.random() * (level.endless ? 2 + difficulty() * 3 : 3));
     for (let i = 0; i < n; i++) {
       const id = level.rush.types[Math.floor(Math.random() * level.rush.types.length)];
       setTimeout(() => { if (running) makeChar(id, cx + (Math.random() - .5) * 220, cy + (Math.random() - .5) * 160); }, i * 90);
@@ -548,9 +559,14 @@
     const t = CHARS[id];
     HIT_SOUNDS[id]();
     if (t.bonus) {
-      timeLeft += 5;
       stats.bonus++;
-      fx("RENFORTS ! +5 s", x, y - 20, "bonus");
+      if (level.endless) {
+        igpn = Math.max(0, igpn - 30);
+        fx("LE PRÉFET VOUS COUVRE ! IGPN −30", x, y - 20, "bonus");
+      } else {
+        timeLeft += 5;
+        fx("RENFORTS ! +5 s", x, y - 20, "bonus");
+      }
     } else if (t.pts > 0) {
       const before = multiplier();
       combo++;
@@ -586,7 +602,7 @@
   arena.addEventListener("pointerdown", () => { if (running) snd.sfx.whoosh(); });
 
   function start() {
-    score = 0; timeLeft = GAME_TIME; running = true; combo = 0; igpn = 0; endReason = null;
+    score = 0; timeLeft = GAME_TIME; elapsed = 0; running = true; combo = 0; igpn = 0; endReason = null;
     stats = { good: 0, bad: 0, escaped: 0, bonus: 0, maxCombo: 0, badList: {} };
     arena.className = level.cls;
     bestEl.textContent = getBest(level);
@@ -597,13 +613,24 @@
     endOv.classList.add("hidden");
     snd.init();
     snd.sfx.siren();
-    snd.startMusic(LEVELS.indexOf(level));
+    snd.startMusic(level.endless ? 0 : LEVELS.indexOf(level));
     spawn();
     rushTimer = setTimeout(rush, 6000 + Math.random() * 3000);
     clockTimer = setInterval(() => {
-      timeLeft--;
+      elapsed++;
       igpn = Math.max(0, igpn - 2);
       snd.setIntensity(difficulty());
+      if (level.endless) {
+        // Nouveau quartier chaque minute
+        if (elapsed % 60 === 0) {
+          arena.className = ENDLESS_CYCLE[(elapsed / 60) % ENDLESS_CYCLE.length];
+          showBanner(`${elapsed / 60} MIN – ÇA DÉGÉNÈRE !`);
+          snd.sfx.siren();
+        }
+        updateHud();
+        return;
+      }
+      timeLeft--;
       if (timeLeft > 0 && timeLeft <= 5) snd.sfx.tick(timeLeft === 1);
       updateHud();
       if (timeLeft <= 0) end("time");
@@ -611,6 +638,13 @@
   }
 
   function rankFor(s) {
+    if (level.endless) {
+      if (elapsed < 60)  return "🥱 Stagiaire à la buvette";
+      if (elapsed < 120) return "👮 Brigadier zélé";
+      if (elapsed < 180) return "🎖️ Capitaine de compagnie";
+      if (elapsed < 300) return "⭐ Chouchou du préfet";
+      return "🏆 Médaille du Ministre de l'Intérieur";
+    }
     if (endReason === "igpn") return "🚨 Muté à Mende (Lozère)";
     if (s < 0)   return "🚨 Suspendu par l'IGPN";
     if (s < 100) return "🥱 Stagiaire à la buvette";
@@ -629,7 +663,7 @@
     clearInterval(clockTimer);
     arena.querySelectorAll(".char").forEach(e => e.classList.add("leaving"));
     snd.stopMusic();
-    snd.sfx.end(reason === "time" && score >= 250);
+    snd.sfx.end(level.endless ? elapsed >= 180 : reason === "time" && score >= 250);
     if (score > getBest(level)) {
       try { localStorage.setItem(bestKey(level), String(score)); } catch (e) {}
       bestEl.textContent = score;
@@ -640,7 +674,7 @@
     const bavures = Object.entries(stats.badList).map(([k, v]) => `${v} ${CHARS[k].plural}`).join(", ");
     $("details").innerHTML =
       (reason === "igpn" ? "L'IGPN a ouvert une enquête (elle n'aboutira jamais, mais quand même).<br>" : "") +
-      `${level.name}<br>` +
+      `${level.name}` + (level.endless ? ` · Tenu <b>${fmtTime(elapsed)}</b>` : "") + "<br>" +
       `Interpellations : <b>${stats.good}</b> · Fuyards : <b>${stats.escaped}</b> · Meilleur combo : <b>${stats.maxCombo}</b>` +
       (stats.bonus ? ` · Renforts : <b>${stats.bonus}</b>` : "") + "<br>" +
       (stats.bad ? `Bavures : <b>${stats.bad}</b> (${bavures})` : "Aucune bavure. Le préfet est ému.");
